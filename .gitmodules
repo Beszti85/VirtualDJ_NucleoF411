@@ -1,0 +1,6 @@
+[submodule "ChipDrivers"]
+	path = ChipDrivers
+	url = https://github.com/Beszti85/ChipDrivers
+[submodule "Modules"]
+	path = Modules
+	url = https://github.com/Beszti85/Modules
