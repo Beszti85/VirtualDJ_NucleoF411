@@ -59,18 +59,46 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define S1_Pin GPIO_PIN_0
+#define S1_GPIO_Port GPIOC
+#define S2_Pin GPIO_PIN_1
+#define S2_GPIO_Port GPIOC
+#define S3_Pin GPIO_PIN_2
+#define S3_GPIO_Port GPIOC
+#define S4_Pin GPIO_PIN_3
+#define S4_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define S5_Pin GPIO_PIN_4
+#define S5_GPIO_Port GPIOC
+#define S6_Pin GPIO_PIN_5
+#define S6_GPIO_Port GPIOC
+#define S7_Pin GPIO_PIN_6
+#define S7_GPIO_Port GPIOC
+#define S8_Pin GPIO_PIN_7
+#define S8_GPIO_Port GPIOC
+#define S9_Pin GPIO_PIN_8
+#define S9_GPIO_Port GPIOC
+#define S10_Pin GPIO_PIN_9
+#define S10_GPIO_Port GPIOC
+#define KD0_Pin GPIO_PIN_8
+#define KD0_GPIO_Port GPIOA
+#define KD1_Pin GPIO_PIN_9
+#define KD1_GPIO_Port GPIOA
+#define KD2_Pin GPIO_PIN_10
+#define KD2_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define SWO_Pin GPIO_PIN_3
-#define SWO_GPIO_Port GPIOB
+#define S11_Pin GPIO_PIN_10
+#define S11_GPIO_Port GPIOC
+#define S12_Pin GPIO_PIN_11
+#define S12_GPIO_Port GPIOC
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
