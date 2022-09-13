@@ -22,7 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_customhid.h"
+#include "usbd_custom_hid_if.h"
+#include "button.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +50,117 @@ TIM_HandleTypeDef htim4;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+typedef struct
+{
+	uint8_t leftPlay   : 1;
+	uint8_t leftPause  : 1;
+	uint8_t leftCue    : 1;
+	uint8_t leftStop   : 1;
+	uint8_t rightPlay  : 1;
+	uint8_t rightPause : 1;
+	uint8_t rightCue   : 1;
+	uint8_t rightStop  : 1;
+} Buttons_t;
 
+typedef struct
+{
+	Buttons_t  buttons;
+	uint8_t    leftPitch;
+	uint8_t    rightPitch;
+	uint8_t    leftVolume;
+	uint8_t    rightVolume;
+	uint8_t    crossFader;
+	uint8_t    leftJog;
+	uint8_t    rightJog;
+} UsbHidVdjController_t;
+
+GPIO_PinState buttonB1State;
+GPIO_PinState buttonOut1State;
+GPIO_PinState buttonOut2State;
+GPIO_PinState buttonOut3State;
+GPIO_PinState buttonOut4State;
+
+UsbHidVdjController_t VdjCtrlReport;
+extern USBD_HandleTypeDef hUsbDeviceFS;
+
+ButtonHandler_t ButtonPlayPause =
+{
+	.ActiveState = GPIO_PIN_SET,
+	.DebounceCtr = 0u,
+	.DebounceOff = 20u,
+	.DebounceOn  = 20u,
+	.IsPressed   = false,
+	.WasPressed  = false,
+	.Padding     = 0u
+};
+
+ButtonHandler_t ButtonCue =
+{
+	.ActiveState = GPIO_PIN_SET,
+	.DebounceCtr = 0u,
+	.DebounceOff = 20u,
+	.DebounceOn  = 20u,
+	.IsPressed   = false,
+	.WasPressed  = false,
+	.Padding     = 0u
+};
+
+ButtonHandler_t ButtonSearchLeft =
+{
+	.ActiveState = GPIO_PIN_SET,
+	.DebounceCtr = 0u,
+	.DebounceOff = 20u,
+	.DebounceOn  = 20u,
+	.IsPressed   = false,
+	.WasPressed  = false,
+	.Padding     = 0u
+};
+
+ButtonHandler_t ButtonSearchRight =
+{
+	.ActiveState = GPIO_PIN_SET,
+	.DebounceCtr = 0u,
+	.DebounceOff = 20u,
+	.DebounceOn  = 20u,
+	.IsPressed   = false,
+	.WasPressed  = false,
+	.Padding     = 0u
+};
+
+ButtonHandler_t ButtonHold =
+{
+	.ActiveState = GPIO_PIN_SET,
+	.DebounceCtr = 0u,
+	.DebounceOff = 20u,
+	.DebounceOn  = 20u,
+	.IsPressed   = false,
+	.WasPressed  = false,
+	.Padding     = 0u
+};
+
+ButtonHandler_t ButtonEject =
+{
+  .ActiveState = GPIO_PIN_SET,
+  .DebounceCtr = 0u,
+  .DebounceOff = 20u,
+  .DebounceOn  = 20u,
+  .IsPressed   = false,
+  .WasPressed  = false,
+  .Padding     = 0u
+};
+
+ButtonHandler_t ButtonTrackBackward =
+{
+  .ActiveState = GPIO_PIN_SET,
+  .DebounceCtr = 0u,
+  .DebounceOff = 20u,
+  .DebounceOn  = 20u,
+  .IsPressed   = false,
+  .WasPressed  = false,
+  .Padding     = 0u
+};
+
+volatile uint16_t JogCntr = 0u;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,7 +171,7 @@ static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void SegmentDisplayDriver(uint16_t value);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -103,6 +215,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
+  // Init
+  VdjCtrlReport.buttons.leftPause = false;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -112,6 +226,90 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // Read buttons on S1: HOLD, TRKB and PLAY
+    HAL_GPIO_WritePin(S1_GPIO_Port, S1_Pin, GPIO_PIN_SET );
+    if( HAL_GPIO_ReadPin(KD0_GPIO_Port, KD0_Pin) == ButtonHold.ActiveState )
+    {
+      if( ButtonHold.IsPressed == false )
+      {
+        ButtonHold.IsPressed = true;
+        //VdjCtrlReport.buttons.leftPlay ^= VdjCtrlReport.buttons.leftPlay;
+        //VdjCtrlReport.buttons.leftPause ^= VdjCtrlReport.buttons.leftPause;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      }
+    }
+    else
+    {
+      if( ButtonHold.IsPressed == true )
+      {
+        ButtonHold.IsPressed = false;
+        //VdjCtrlReport.buttons.leftPlay = false;
+        //VdjCtrlReport.buttons.leftPause = true;
+        //USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      }
+    }
+    if( HAL_GPIO_ReadPin(KD1_GPIO_Port, KD1_Pin) == ButtonTrackBackward.ActiveState )
+    {
+      if( ButtonTrackBackward.IsPressed == false )
+      {
+        ButtonTrackBackward.IsPressed = true;
+        VdjCtrlReport.buttons.leftPlay = true;
+        VdjCtrlReport.buttons.leftPause = false;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      }
+    }
+    else
+    {
+      if( ButtonTrackBackward.IsPressed == true )
+      {
+        ButtonTrackBackward.IsPressed = false;
+        VdjCtrlReport.buttons.leftPlay = false;
+        VdjCtrlReport.buttons.leftPause = true;
+        //USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      }
+    }
+    if( HAL_GPIO_ReadPin(KD2_GPIO_Port, KD2_Pin) == ButtonPlayPause.ActiveState )
+    {
+      if( ButtonPlayPause.IsPressed == false )
+      {
+        ButtonPlayPause.IsPressed = true;
+        if(VdjCtrlReport.buttons.leftPlay == true)
+        {
+          VdjCtrlReport.buttons.leftPlay = false;
+          VdjCtrlReport.buttons.leftPause = true;
+        }
+        else
+        {
+          VdjCtrlReport.buttons.leftPlay = true;
+          VdjCtrlReport.buttons.leftPause = false;
+        }
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      }
+    }
+    else
+    {
+      if( ButtonPlayPause.IsPressed == true )
+      {
+        ButtonPlayPause.IsPressed = false;
+        //USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      }
+    }
+    HAL_GPIO_WritePin(S1_GPIO_Port, S1_Pin, GPIO_PIN_RESET );
+#if 1
+    JogCntr = TIM4->CNT;
+    // Jog value changed?
+    if( VdjCtrlReport.leftJog != JogCntr )
+    {
+      VdjCtrlReport.leftJog = JogCntr;
+      USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+    }
+    HAL_Delay(1u);
+#else
+    HAL_Delay(500u);
+    SegmentDisplayDriver(0x0FFFu);
+    HAL_Delay(500u);
+#endif
+    //SegmentDisplayDriver(0x0000u);
   }
   /* USER CODE END 3 */
 }
@@ -284,7 +482,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 119;
+  htim4.Init.Period = 47;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
@@ -420,7 +618,20 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+static void SegmentDisplayDriver(uint16_t value)
+{
+  // segments connected to PortC 0-11
+  uint32_t tempU32 = (uint32_t)value;
+  // set the 1 segments
+  GPIOC->BSRR = tempU32 & 0x00000FFFuL;
+  // clear the 0 segments
+  tempU32 = (~tempU32) & 0x00000FFFuL;
+  tempU32 <<= 16u;
+  //GPIOC->BSRR = tempU32;
+  // Switch on the segment
+  //GPIOB->BSRR = 0x0000373FuL;
+  GPIOB->BSRR = 0x373F0000uL;
+}
 /* USER CODE END 4 */
 
 /**
