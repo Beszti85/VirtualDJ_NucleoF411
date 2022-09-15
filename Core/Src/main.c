@@ -56,10 +56,12 @@ typedef struct
 	uint8_t leftPause  : 1;
 	uint8_t leftCue    : 1;
 	uint8_t leftStop   : 1;
+	uint8_t leftHold   : 1;
 	uint8_t rightPlay  : 1;
 	uint8_t rightPause : 1;
 	uint8_t rightCue   : 1;
 	uint8_t rightStop  : 1;
+	uint8_t rightHold  : 1;
 } Buttons_t;
 
 typedef struct
@@ -233,8 +235,14 @@ int main(void)
       if( ButtonHold.IsPressed == false )
       {
         ButtonHold.IsPressed = true;
-        //VdjCtrlReport.buttons.leftPlay ^= VdjCtrlReport.buttons.leftPlay;
-        //VdjCtrlReport.buttons.leftPause ^= VdjCtrlReport.buttons.leftPause;
+        if(VdjCtrlReport.buttons.leftHold == true)
+        {
+          VdjCtrlReport.buttons.leftHold = false;
+        }
+        else
+        {
+          VdjCtrlReport.buttons.leftHold = true;
+        }
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
       }
     }
@@ -243,9 +251,6 @@ int main(void)
       if( ButtonHold.IsPressed == true )
       {
         ButtonHold.IsPressed = false;
-        //VdjCtrlReport.buttons.leftPlay = false;
-        //VdjCtrlReport.buttons.leftPause = true;
-        //USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
       }
     }
     if( HAL_GPIO_ReadPin(KD1_GPIO_Port, KD1_Pin) == ButtonTrackBackward.ActiveState )
@@ -253,8 +258,6 @@ int main(void)
       if( ButtonTrackBackward.IsPressed == false )
       {
         ButtonTrackBackward.IsPressed = true;
-        VdjCtrlReport.buttons.leftPlay = true;
-        VdjCtrlReport.buttons.leftPause = false;
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
       }
     }
@@ -263,9 +266,6 @@ int main(void)
       if( ButtonTrackBackward.IsPressed == true )
       {
         ButtonTrackBackward.IsPressed = false;
-        VdjCtrlReport.buttons.leftPlay = false;
-        VdjCtrlReport.buttons.leftPause = true;
-        //USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
       }
     }
     if( HAL_GPIO_ReadPin(KD2_GPIO_Port, KD2_Pin) == ButtonPlayPause.ActiveState )
@@ -291,7 +291,6 @@ int main(void)
       if( ButtonPlayPause.IsPressed == true )
       {
         ButtonPlayPause.IsPressed = false;
-        //USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
       }
     }
     HAL_GPIO_WritePin(S1_GPIO_Port, S1_Pin, GPIO_PIN_RESET );
