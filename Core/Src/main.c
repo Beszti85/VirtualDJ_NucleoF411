@@ -25,6 +25,7 @@
 #include "usbd_customhid.h"
 #include "usbd_custom_hid_if.h"
 #include "button.h"
+#include "keyhandler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +44,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
+
+SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -50,31 +54,6 @@ TIM_HandleTypeDef htim4;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-typedef struct
-{
-	uint8_t leftPlay   : 1;
-	uint8_t leftPause  : 1;
-	uint8_t leftCue    : 1;
-	uint8_t leftStop   : 1;
-	uint8_t leftHold   : 1;
-	uint8_t rightPlay  : 1;
-	uint8_t rightPause : 1;
-	uint8_t rightCue   : 1;
-	uint8_t rightStop  : 1;
-	uint8_t rightHold  : 1;
-} Buttons_t;
-
-typedef struct
-{
-	Buttons_t  buttons;
-	uint8_t    leftPitch;
-	uint8_t    rightPitch;
-	uint8_t    leftVolume;
-	uint8_t    rightVolume;
-	uint8_t    crossFader;
-	uint8_t    leftJog;
-	uint8_t    rightJog;
-} UsbHidVdjController_t;
 
 GPIO_PinState buttonB1State;
 GPIO_PinState buttonOut1State;
@@ -82,98 +61,28 @@ GPIO_PinState buttonOut2State;
 GPIO_PinState buttonOut3State;
 GPIO_PinState buttonOut4State;
 
-UsbHidVdjController_t VdjCtrlReport;
+extern UsbHidVdjController_t VdjCtrlReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-ButtonHandler_t ButtonPlayPause =
-{
-	.ActiveState = GPIO_PIN_SET,
-	.DebounceCtr = 0u,
-	.DebounceOff = 20u,
-	.DebounceOn  = 20u,
-	.IsPressed   = false,
-	.WasPressed  = false,
-	.Padding     = 0u
-};
-
-ButtonHandler_t ButtonCue =
-{
-	.ActiveState = GPIO_PIN_SET,
-	.DebounceCtr = 0u,
-	.DebounceOff = 20u,
-	.DebounceOn  = 20u,
-	.IsPressed   = false,
-	.WasPressed  = false,
-	.Padding     = 0u
-};
-
-ButtonHandler_t ButtonSearchLeft =
-{
-	.ActiveState = GPIO_PIN_SET,
-	.DebounceCtr = 0u,
-	.DebounceOff = 20u,
-	.DebounceOn  = 20u,
-	.IsPressed   = false,
-	.WasPressed  = false,
-	.Padding     = 0u
-};
-
-ButtonHandler_t ButtonSearchRight =
-{
-	.ActiveState = GPIO_PIN_SET,
-	.DebounceCtr = 0u,
-	.DebounceOff = 20u,
-	.DebounceOn  = 20u,
-	.IsPressed   = false,
-	.WasPressed  = false,
-	.Padding     = 0u
-};
-
-ButtonHandler_t ButtonHold =
-{
-	.ActiveState = GPIO_PIN_SET,
-	.DebounceCtr = 0u,
-	.DebounceOff = 20u,
-	.DebounceOn  = 20u,
-	.IsPressed   = false,
-	.WasPressed  = false,
-	.Padding     = 0u
-};
-
-ButtonHandler_t ButtonEject =
-{
-  .ActiveState = GPIO_PIN_SET,
-  .DebounceCtr = 0u,
-  .DebounceOff = 20u,
-  .DebounceOn  = 20u,
-  .IsPressed   = false,
-  .WasPressed  = false,
-  .Padding     = 0u
-};
-
-ButtonHandler_t ButtonTrackBackward =
-{
-  .ActiveState = GPIO_PIN_SET,
-  .DebounceCtr = 0u,
-  .DebounceOff = 20u,
-  .DebounceOn  = 20u,
-  .IsPressed   = false,
-  .WasPressed  = false,
-  .Padding     = 0u
-};
-
 volatile uint16_t JogCntr = 0u;
+
+uint8_t Debug_JogCounter[480] = {0u};
+uint16_t DebugIndex = 0u;
+
+volatile uint16_t ADC_RawData[2u] = {0u};
+float ADC_Voltage[2u];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
-static void SegmentDisplayDriver(uint16_t value);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -209,11 +118,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_USB_DEVICE_Init();
   MX_ADC1_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
@@ -228,87 +139,29 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // Read buttons on S1: HOLD, TRKB and PLAY
-    HAL_GPIO_WritePin(S1_GPIO_Port, S1_Pin, GPIO_PIN_SET );
-    if( HAL_GPIO_ReadPin(KD0_GPIO_Port, KD0_Pin) == ButtonHold.ActiveState )
-    {
-      if( ButtonHold.IsPressed == false )
-      {
-        ButtonHold.IsPressed = true;
-        if(VdjCtrlReport.buttons.leftHold == true)
-        {
-          VdjCtrlReport.buttons.leftHold = false;
-        }
-        else
-        {
-          VdjCtrlReport.buttons.leftHold = true;
-        }
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
-      }
-    }
-    else
-    {
-      if( ButtonHold.IsPressed == true )
-      {
-        ButtonHold.IsPressed = false;
-      }
-    }
-    if( HAL_GPIO_ReadPin(KD1_GPIO_Port, KD1_Pin) == ButtonTrackBackward.ActiveState )
-    {
-      if( ButtonTrackBackward.IsPressed == false )
-      {
-        ButtonTrackBackward.IsPressed = true;
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
-      }
-    }
-    else
-    {
-      if( ButtonTrackBackward.IsPressed == true )
-      {
-        ButtonTrackBackward.IsPressed = false;
-      }
-    }
-    if( HAL_GPIO_ReadPin(KD2_GPIO_Port, KD2_Pin) == ButtonPlayPause.ActiveState )
-    {
-      if( ButtonPlayPause.IsPressed == false )
-      {
-        ButtonPlayPause.IsPressed = true;
-        if(VdjCtrlReport.buttons.leftPlay == true)
-        {
-          VdjCtrlReport.buttons.leftPlay = false;
-          VdjCtrlReport.buttons.leftPause = true;
-        }
-        else
-        {
-          VdjCtrlReport.buttons.leftPlay = true;
-          VdjCtrlReport.buttons.leftPause = false;
-        }
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
-      }
-    }
-    else
-    {
-      if( ButtonPlayPause.IsPressed == true )
-      {
-        ButtonPlayPause.IsPressed = false;
-      }
-    }
-    HAL_GPIO_WritePin(S1_GPIO_Port, S1_Pin, GPIO_PIN_RESET );
-#if 1
+    KEYHANDLER_ScanButtons();
+
     JogCntr = TIM4->CNT;
     // Jog value changed?
     if( VdjCtrlReport.leftJog != JogCntr )
     {
       VdjCtrlReport.leftJog = JogCntr;
       USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
+      Debug_JogCounter[DebugIndex] = JogCntr;
+      DebugIndex++;
+      if( DebugIndex == 480u )
+      {
+        DebugIndex = 0u;
+      }
     }
-    HAL_Delay(1u);
-#else
-    HAL_Delay(500u);
-    SegmentDisplayDriver(0x0FFFu);
-    HAL_Delay(500u);
-#endif
-    //SegmentDisplayDriver(0x0000u);
+    // Read Pitch potmeter
+    // Convert ADC raw data from last running
+    for( uint16_t i = 0u; i < 7u; i++ )
+    {
+      ADC_Voltage[i] = (float)ADC_RawData[i] * 3.3f / 4096.0f;
+    }
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_RawData[0u], 7u);
+    HAL_Delay(5u);
   }
   /* USER CODE END 3 */
 }
@@ -412,6 +265,44 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -481,7 +372,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 47;
+  htim4.Init.Period = 119;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
@@ -543,6 +434,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -559,17 +466,10 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, S1_Pin|S2_Pin|S3_Pin|S4_Pin
-                          |S5_Pin|S6_Pin|S7_Pin|S8_Pin
-                          |S9_Pin|S10_Pin|S11_Pin|S12_Pin
-                          |GPIO_PIN_12, GPIO_PIN_RESET);
+                          |S5_Pin|GPIO_PIN_12, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, G1_Pin|G2_Pin|G3_Pin|G9_Pin
-                          |G10_Pin|G11_Pin|G4_Pin|G5_Pin
-                          |G6_Pin|G7_Pin|G8_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -578,13 +478,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : S1_Pin S2_Pin S3_Pin S4_Pin
-                           S5_Pin S6_Pin S7_Pin S8_Pin
-                           S9_Pin S10_Pin S11_Pin S12_Pin
-                           PC12 */
+                           S5_Pin PC12 */
   GPIO_InitStruct.Pin = S1_Pin|S2_Pin|S3_Pin|S4_Pin
-                          |S5_Pin|S6_Pin|S7_Pin|S8_Pin
-                          |S9_Pin|S10_Pin|S11_Pin|S12_Pin
-                          |GPIO_PIN_12;
+                          |S5_Pin|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -597,17 +493,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : G1_Pin G2_Pin G3_Pin G9_Pin
-                           G10_Pin G11_Pin G4_Pin G5_Pin
-                           G6_Pin G7_Pin G8_Pin */
-  GPIO_InitStruct.Pin = G1_Pin|G2_Pin|G3_Pin|G9_Pin
-                          |G10_Pin|G11_Pin|G4_Pin|G5_Pin
-                          |G6_Pin|G7_Pin|G8_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
   /*Configure GPIO pins : KD0_Pin KD1_Pin KD2_Pin */
   GPIO_InitStruct.Pin = KD0_Pin|KD1_Pin|KD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -617,20 +502,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-static void SegmentDisplayDriver(uint16_t value)
-{
-  // segments connected to PortC 0-11
-  uint32_t tempU32 = (uint32_t)value;
-  // set the 1 segments
-  GPIOC->BSRR = tempU32 & 0x00000FFFuL;
-  // clear the 0 segments
-  tempU32 = (~tempU32) & 0x00000FFFuL;
-  tempU32 <<= 16u;
-  //GPIOC->BSRR = tempU32;
-  // Switch on the segment
-  //GPIOB->BSRR = 0x0000373FuL;
-  GPIOB->BSRR = 0x373F0000uL;
-}
 /* USER CODE END 4 */
 
 /**

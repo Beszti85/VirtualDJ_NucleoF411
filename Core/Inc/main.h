@@ -75,28 +75,6 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define S5_Pin GPIO_PIN_4
 #define S5_GPIO_Port GPIOC
-#define S6_Pin GPIO_PIN_5
-#define S6_GPIO_Port GPIOC
-#define G1_Pin GPIO_PIN_0
-#define G1_GPIO_Port GPIOB
-#define G2_Pin GPIO_PIN_1
-#define G2_GPIO_Port GPIOB
-#define G3_Pin GPIO_PIN_2
-#define G3_GPIO_Port GPIOB
-#define G9_Pin GPIO_PIN_10
-#define G9_GPIO_Port GPIOB
-#define G10_Pin GPIO_PIN_12
-#define G10_GPIO_Port GPIOB
-#define G11_Pin GPIO_PIN_13
-#define G11_GPIO_Port GPIOB
-#define S7_Pin GPIO_PIN_6
-#define S7_GPIO_Port GPIOC
-#define S8_Pin GPIO_PIN_7
-#define S8_GPIO_Port GPIOC
-#define S9_Pin GPIO_PIN_8
-#define S9_GPIO_Port GPIOC
-#define S10_Pin GPIO_PIN_9
-#define S10_GPIO_Port GPIOC
 #define KD0_Pin GPIO_PIN_8
 #define KD0_GPIO_Port GPIOA
 #define KD1_Pin GPIO_PIN_9
@@ -107,20 +85,6 @@ void Error_Handler(void);
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define S11_Pin GPIO_PIN_10
-#define S11_GPIO_Port GPIOC
-#define S12_Pin GPIO_PIN_11
-#define S12_GPIO_Port GPIOC
-#define G4_Pin GPIO_PIN_3
-#define G4_GPIO_Port GPIOB
-#define G5_Pin GPIO_PIN_4
-#define G5_GPIO_Port GPIOB
-#define G6_Pin GPIO_PIN_5
-#define G6_GPIO_Port GPIOB
-#define G7_Pin GPIO_PIN_8
-#define G7_GPIO_Port GPIOB
-#define G8_Pin GPIO_PIN_9
-#define G8_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
