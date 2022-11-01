@@ -22,8 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "usbd_customhid.h"
-#include "usbd_custom_hid_if.h"
+#include "usbd_midi_if.h"
 #include "button.h"
 #include "keyhandler.h"
 /* USER CODE END Includes */

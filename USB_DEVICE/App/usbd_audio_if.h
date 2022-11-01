@@ -1,9 +1,9 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : usbd_custom_hid_if.h
+  * @file           : usbd_audio_if.h
   * @version        : v1.0_Cube
-  * @brief          : Header for usbd_custom_hid_if.c file.
+  * @brief          : Header for usbd_audio_if.c file.
   ******************************************************************************
   * @attention
   *
@@ -17,17 +17,16 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __USBD_CUSTOM_HID_IF_H__
-#define __USBD_CUSTOM_HID_IF_H__
+#ifndef __USBD_AUDIO_IF_H__
+#define __USBD_AUDIO_IF_H__
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbd_customhid.h"
+#include "usbd_audio.h"
 
 /* USER CODE BEGIN INCLUDE */
 
@@ -38,12 +37,12 @@
   * @{
   */
 
-/** @defgroup USBD_CUSTOM_HID USBD_CUSTOM_HID
-  * @brief Usb custom human interface device module.
+/** @defgroup USBD_AUDIO_IF USBD_AUDIO_IF
+  * @brief Usb audio interface device module.
   * @{
   */
 
-/** @defgroup USBD_CUSTOM_HID_Exported_Defines USBD_CUSTOM_HID_Exported_Defines
+/** @defgroup USBD_AUDIO_IF_Exported_Defines USBD_AUDIO_IF_Exported_Defines
   * @brief Defines.
   * @{
   */
@@ -56,7 +55,7 @@
   * @}
   */
 
-/** @defgroup USBD_CUSTOM_HID_Exported_Types USBD_CUSTOM_HID_Exported_Types
+/** @defgroup USBD_AUDIO_IF_Exported_Types USBD_AUDIO_IF_Exported_Types
   * @brief Types.
   * @{
   */
@@ -69,7 +68,7 @@
   * @}
   */
 
-/** @defgroup USBD_CUSTOM_HID_Exported_Macros USBD_CUSTOM_HID_Exported_Macros
+/** @defgroup USBD_AUDIO_IF_Exported_Macros USBD_AUDIO_IF_Exported_Macros
   * @brief Aliases.
   * @{
   */
@@ -82,13 +81,13 @@
   * @}
   */
 
-/** @defgroup USBD_CUSTOM_HID_Exported_Variables USBD_CUSTOM_HID_Exported_Variables
+/** @defgroup USBD_AUDIO_IF_Exported_Variables USBD_AUDIO_IF_Exported_Variables
   * @brief Public variables.
   * @{
   */
 
-/** CUSTOMHID Interface callback. */
-extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops_FS;
+/** AUDIO_IF Interface callback. */
+extern USBD_AUDIO_ItfTypeDef USBD_AUDIO_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
 
@@ -98,10 +97,22 @@ extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops_FS;
   * @}
   */
 
-/** @defgroup USBD_CUSTOM_HID_Exported_FunctionsPrototype USBD_CUSTOM_HID_Exported_FunctionsPrototype
+/** @defgroup USBD_AUDIO_IF_Exported_FunctionsPrototype USBD_AUDIO_IF_Exported_FunctionsPrototype
   * @brief Public functions declaration.
   * @{
   */
+
+/**
+  * @brief  Manages the DMA full transfer complete event.
+  * @retval None
+  */
+void TransferComplete_CallBack_FS(void);
+
+/**
+  * @brief  Manages the DMA half transfer complete event.
+  * @retval None
+  */
+void HalfTransfer_CallBack_FS(void);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
@@ -123,5 +134,4 @@ extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops_FS;
 }
 #endif
 
-#endif /* __USBD_CUSTOM_HID_IF_H__ */
-
+#endif /* __USBD_AUDIO_IF_H__ */
