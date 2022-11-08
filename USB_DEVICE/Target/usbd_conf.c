@@ -27,6 +27,7 @@
 #include "usbd_audio.h"
 
 /* USER CODE BEGIN Includes */
+#include "usbd_midi.h"
 
 /* USER CODE END Includes */
 
