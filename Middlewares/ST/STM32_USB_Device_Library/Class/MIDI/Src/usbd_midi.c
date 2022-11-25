@@ -10,9 +10,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_midi.h"
 #include "usbd_desc.h"
-#include "stm32f1xx_hal_conf.h"
+//#include "stm32f1xx_hal_conf.h"
 #include "usbd_ctlreq.h"
-#include "stm32f1xx_hal.h"
+//#include "stm32f1xx_hal.h"
 
 static uint8_t  USBD_MIDI_Init (USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 static uint8_t  USBD_MIDI_DeInit (USBD_HandleTypeDef *pdev, uint8_t cfgidx);
@@ -194,7 +194,7 @@ uint8_t USBD_MIDI_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_MIDI_ItfTypeD
   uint8_t ret = USBD_FAIL;
   
   if(fops != NULL){
-    pdev->pUserData= fops;
+    pdev->pUserData[0u]= fops;
     ret = USBD_OK;    
   }
   

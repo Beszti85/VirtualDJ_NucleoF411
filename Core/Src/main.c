@@ -61,9 +61,6 @@ GPIO_PinState buttonOut2State;
 GPIO_PinState buttonOut3State;
 GPIO_PinState buttonOut4State;
 
-extern UsbHidVdjController_t VdjCtrlReport;
-extern USBD_HandleTypeDef hUsbDeviceFS;
-
 volatile uint16_t JogCntr = 0u;
 
 uint8_t Debug_JogCounter[480] = {0u};
@@ -133,8 +130,6 @@ int main(void)
   // Start PWM
   HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_1);
 
-  // Init
-  VdjCtrlReport.buttons.leftPause = false;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -144,21 +139,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    KEYHANDLER_ScanButtons();
 
-    JogCntr = TIM4->CNT;
-    // Jog value changed?
-    if( VdjCtrlReport.leftJog != JogCntr )
-    {
-      VdjCtrlReport.leftJog = JogCntr;
-      USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&VdjCtrlReport, sizeof(VdjCtrlReport));
-      Debug_JogCounter[DebugIndex] = JogCntr;
-      DebugIndex++;
-      if( DebugIndex == 480u )
-      {
-        DebugIndex = 0u;
-      }
-    }
     // Read Pitch potmeter
     // Convert ADC raw data from last running
     for( uint16_t i = 0u; i < 7u; i++ )
